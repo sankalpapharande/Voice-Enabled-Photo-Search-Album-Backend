@@ -166,7 +166,7 @@ Resources:
         InternalUserDatabaseEnabled: true
         MasterUserOptions:
           MasterUserName: 'open-search-user'
-          MasterUserPassword: 'User@1234'
+          MasterUserPassword: '<open-search-user-password>'
       ClusterConfig:
         InstanceType: 't3.small.search'
         InstanceCount: 1

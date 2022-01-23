@@ -9,7 +9,7 @@ service = 'es'
 headers = {"Content-Type": "application/json"}
 credentials = boto3.Session().get_credentials()
 
-aws_auth = ('open-search-user', 'User@1234')
+aws_auth = ('open-search-user', '<open-search-user-password>')
 open_search_client = OpenSearch(
     hosts=[{'host': host, 'port': 443}],
     http_auth=aws_auth,
