@@ -12,7 +12,7 @@ Resources:
       Description: ""
       MemorySize: 128
       Timeout: 183
-      Role: "arn:aws:iam::877755470769:role/admin-role-lambda"
+      Role: "arn:aws:iam::<AWS Account ID>:role/admin-role-lambda"
       Events:
         S3Trigger:
           Type: S3
@@ -35,7 +35,7 @@ Resources:
       Description: ""
       MemorySize: 128
       Timeout: 30
-      Role: "arn:aws:iam::877755470769:role/admin-role-lambda"
+      Role: "arn:aws:iam::<AWS Account ID>:role/admin-role-lambda"
       Events:
         Api1:
           Type: Api
@@ -46,7 +46,7 @@ Resources:
         Variables:
           REGION: us-east-1
       Layers:
-        - arn:aws:lambda:us-east-1:877755470769:layer:TestingWithES:4
+        - arn:aws:lambda:us-east-1:<AWS Account ID>:layer:TestingWithES:4
 
   s3backendpipeline:
     Type: AWS::S3::Bucket
