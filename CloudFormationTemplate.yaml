@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Smart Photo Album Cloud Formation Template for CCBD COMS 6998 Sec 13 Assignment 2
+
+Resources:
+  pipelines3photobucketcloudformation:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: pipelines3photobucketcloudformation
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+        BlockPublicPolicy: False
+        IgnorePublicAcls: False
+        RestrictPublicBuckets: False
+
+  s3frontendbucketcloudformation:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: s3frontendbucketcloudformation
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+        BlockPublicPolicy: False
+        IgnorePublicAcls: False
+        RestrictPublicBuckets: False
+
+  pipelines3photobucketcloudformationpolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref pipelines3photobucketcloudformation
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref pipelines3photobucketcloudformation
+                - /*
+            Principal: '*'
+
+  s3frontendbucketcloudformationpolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref s3frontendbucketcloudformation
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref s3frontendbucketcloudformation
+                - /*
+            Principal: '*'
+
+  RootRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "root"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "*"
+                Resource: "*"
+
+  backendpipeline:
+    Type: "AWS::CodePipeline::Pipeline"
+    Properties:
+      RoleArn: !GetAtt RootRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref pipelines3photobucketcloudformation
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              RunOrder: 1
+              Configuration:
+                Repo: "Smart-Photo-Album-Backend"
+                Branch: "main"
+                OAuthToken: "<GitHub Access Token>"
+                Owner: "sankalpapharande"
+                PollForSourceChanges: "true"
+              OutputArtifacts:
+                - Name: SourceArtifact
+              InputArtifacts: [ ]
+              Region: "us-east-1"
+              Namespace: SourceVariables
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              RunOrder: 1
+              Configuration:
+                ProjectName: "backend-pipeline-build"
+              OutputArtifacts:
+                - Name: BuildArtifact
+              InputArtifacts:
+                - Name: SourceArtifact
+              Region: "us-east-1"
+              Namespace: BuildVariables
+        - Name: Deploy
+          Actions:
+            - Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              RunOrder: 1
+              Configuration:
+                ActionMode: REPLACE_ON_FAILURE
+                Capabilities: CAPABILITY_IAM,CAPABILITY_AUTO_EXPAND
+                RoleArn: !GetAtt RootRole.Arn
+                StackName: "smart-album-backend-1"
+                TemplatePath: BuildArtifact::outputsamtemplate.yml
+              OutputArtifacts: [ ]
+              InputArtifacts:
+                - Name: BuildArtifact
+              Region: us-east-1
+              Namespace: DeployVariables
+  opensearchdomain:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action: 'es:*'
+            Resource: !Sub "arn:aws:es:us-east-1:$(AWS::AccountId):domain/cloudformationphotos/*"
+      AdvancedOptions:
+        indices.fielddata.cache.size: '20'
+        indices.query.bool.max_clause_count: '1024'
+        override_main_response_version: False
+        rest.action.multi.allow_explicit_index: True
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: 'open-search-user'
+          MasterUserPassword: 'User@1234'
+      ClusterConfig:
+        InstanceType: 't3.small.search'
+        InstanceCount: 1
+        DedicatedMasterEnabled: False
+        ZoneAwarenessEnabled: False
+        WarmEnabled: False
+      CognitoOptions:
+        Enabled: False
+      DomainEndpointOptions:
+        EnforceHTTPS: True
+        TLSSecurityPolicy: Policy-Min-TLS-1-0-2019-07
+        CustomEndpointEnabled: False
+      DomainName: 'cloudformationphotos'
+      EBSOptions:
+        EBSEnabled: True
+        VolumeType: gp2
+        VolumeSize: 10
+      EncryptionAtRestOptions:
+        Enabled: true
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+
+
+
+
+
+
+

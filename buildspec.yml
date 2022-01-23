@@ -1,0 +1,10 @@
+version: 0.1
+phases:
+  install:
+    commands:
+      - aws cloudformation package --template-file samTemplate.yaml --s3-bucket photoalbum-backend-bucket --output-template-file outputsamtemplate.yml
+artifacts:
+  type: zip
+  files:
+    - samTemplate.yaml
+    - outputsamtemplate.yml
