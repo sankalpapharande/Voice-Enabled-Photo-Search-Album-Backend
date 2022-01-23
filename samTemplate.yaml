@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: "AWS::Serverless-2016-10-31"
+Description: Cloud Computing Assignment 2 Smart Photo Album
+Resources:
+  indexphotos:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      FunctionName: indexphotoslambda
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      CodeUri: ./
+      Description: ""
+      MemorySize: 128
+      Timeout: 183
+      Role: "arn:aws:iam::<AWS Account ID>:role/admin-role-lambda"
+      Events:
+        S3Trigger:
+          Type: S3
+          Properties:
+            Bucket: !Ref s3backendpipeline
+            Events: s3:ObjectCreated:Put
+      Environment:
+        Variables:
+          REGION: us-east-1
+      Layers:
+        - arn:aws:lambda:us-east-1:<AWS Account ID>:layer:TestingWithES:4
+
+  searchphotos:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      FunctionName: searchphotoslambda
+      Handler: search-photos.lambda_handler
+      Runtime: python3.9
+      CodeUri: ./
+      Description: ""
+      MemorySize: 128
+      Timeout: 30
+      Role: "arn:aws:iam::<AWS Account ID>:role/admin-role-lambda"
+      Events:
+        Api1:
+          Type: Api
+          Properties:
+            Path: /search
+            Method: GET
+      Environment:
+        Variables:
+          REGION: us-east-1
+      Layers:
+        - arn:aws:lambda:us-east-1:<AWS Account ID>:layer:TestingWithES:4
+
+  s3backendpipeline:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: s3backendpipeline
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: False
+        BlockPublicPolicy: False
+        IgnorePublicAcls: False
+        RestrictPublicBuckets: False
+
+  s3backendpipelinepolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref s3backendpipeline
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref s3backendpipeline
+                - /*
+            Principal: '*'
