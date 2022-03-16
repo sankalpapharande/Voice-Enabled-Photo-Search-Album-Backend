@@ -1,3 +1,7 @@
+# Architecture Diagram:
+![Voice-Enabled-Photo-Search-Album.png](Voice-Enabled-Photo-Search-Album.png)
+
+
 # Smart-Photo-Album-Backend
 Lambda Functions for Backend. Templates for Cloud Formation and Code Pipeline
 1. `lambda_function.py`
